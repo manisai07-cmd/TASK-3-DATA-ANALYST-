@@ -1,0 +1,207 @@
+-- ================================
+-- 2. CREATE TABLES
+-- ================================
+
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    country VARCHAR(50)
+);
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    price DECIMAL(10,2)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10,2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE order_items (
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+-- ================================
+-- 3. INSERT SAMPLE DATA
+-- ================================
+
+INSERT INTO customers VALUES
+(1, 'Amit Sharma', 'amit@gmail.com', 'India'),
+(2, 'Priya Rao', 'priya@gmail.com', 'India'),
+(3, 'John Smith', 'john@gmail.com', 'USA'),
+(4, 'Sara Khan', NULL, 'UAE'),
+(5, 'David Lee', 'david@gmail.com', 'USA');
+
+INSERT INTO products VALUES
+(101, 'Laptop', 'Electronics', 60000),
+(102, 'Mobile', 'Electronics', 20000),
+(103, 'Shoes', 'Fashion', 3000),
+(104, 'Watch', 'Fashion', 5000),
+(105, 'Headphones', 'Electronics', 2500);
+
+INSERT INTO orders VALUES
+(1001, 1, '2025-01-10', 65000),
+(1002, 2, '2025-01-12', 20000),
+(1003, 1, '2025-01-15', 3000),
+(1004, 3, '2025-01-18', 5000),
+(1005, 5, '2025-01-20', 2500);
+
+INSERT INTO order_items VALUES
+(1, 1001, 101, 1),
+(2, 1002, 102, 1),
+(3, 1003, 103, 1),
+(4, 1004, 104, 1),
+(5, 1005, 105, 1);
+
+-- =====================================================
+-- 4. BASIC SELECT, WHERE, ORDER BY
+-- =====================================================
+
+-- Customers from India
+SELECT * 
+FROM customers
+WHERE country = 'India';
+
+-- Orders sorted by amount
+SELECT * 
+FROM orders
+ORDER BY total_amount DESC;
+
+-- =====================================================
+-- 5. GROUP BY AND AGGREGATE FUNCTIONS
+-- =====================================================
+
+-- Total revenue
+SELECT SUM(total_amount) AS total_revenue
+FROM orders;
+
+-- Average order value
+SELECT AVG(total_amount) AS avg_order_value
+FROM orders;
+
+-- Orders per country
+SELECT c.country, COUNT(o.order_id) AS total_orders
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.country
+ORDER BY total_orders DESC;
+
+-- =====================================================
+-- 6. JOINS
+-- =====================================================
+
+-- INNER JOIN
+SELECT c.name, o.order_id, o.total_amount
+FROM customers c
+INNER JOIN orders o
+ON c.customer_id = o.customer_id;
+
+-- LEFT JOIN
+SELECT c.name, o.order_id
+FROM customers c
+LEFT JOIN orders o
+ON c.customer_id = o.customer_id;
+
+-- RIGHT JOIN (MySQL supported)
+SELECT c.name, o.order_id
+FROM customers c
+RIGHT JOIN orders o
+ON c.customer_id = o.customer_id;
+
+-- =====================================================
+-- 7. SUBQUERIES
+-- =====================================================
+
+-- Customers who spent above average
+SELECT name
+FROM customers
+WHERE customer_id IN (
+    SELECT customer_id
+    FROM orders
+    WHERE total_amount > (
+        SELECT AVG(total_amount) FROM orders
+    )
+);
+
+-- Orders above average amount
+SELECT *
+FROM orders
+WHERE total_amount > (
+    SELECT AVG(total_amount) FROM orders
+);
+
+-- =====================================================
+-- 8. AVERAGE REVENUE PER USER (ARPU)
+-- =====================================================
+
+SELECT 
+    SUM(total_amount) / COUNT(DISTINCT customer_id) AS ARPU
+FROM orders;
+
+-- =====================================================
+-- 9. HANDLING NULL VALUES
+-- =====================================================
+
+SELECT 
+    name,
+    COALESCE(email, 'Email Not Provided') AS email_status
+FROM customers;
+
+-- =====================================================
+-- 10. CREATE VIEW FOR ANALYSIS
+-- =====================================================
+
+CREATE VIEW country_revenue AS
+SELECT 
+    c.country,
+    SUM(o.total_amount) AS total_revenue
+FROM customers c
+JOIN orders o
+ON c.customer_id = o.customer_id
+GROUP BY c.country;
+
+-- View usage
+SELECT * FROM country_revenue;
+
+-- =====================================================
+-- 11. OPTIMIZATION USING INDEX
+-- =====================================================
+
+CREATE INDEX idx_customer_id ON orders(customer_id);
+CREATE INDEX idx_order_date ON orders(order_date);
+
+-- =====================================================
+-- 12. ADVANCED ANALYSIS QUERY
+-- =====================================================
+
+-- Top 3 highest spending customers
+SELECT c.name, SUM(o.total_amount) AS total_spent
+FROM customers c
+JOIN orders o
+ON c.customer_id = o.customer_id
+GROUP BY c.name
+ORDER BY total_spent DESC
+LIMIT 3;
+
+-- Revenue by product category
+SELECT p.category, SUM(o.total_amount) AS total_revenue
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN orders o ON oi.order_id = o.order_id
+GROUP BY p.category;
+
+-- =====================================================
+-- END OF TASK
+-- =====================================================
